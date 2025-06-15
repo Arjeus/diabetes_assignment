@@ -196,6 +196,14 @@ X_train_bal_enc = pd.get_dummies(X_train_bal, columns=cat_feats, drop_first=True
 X_test_enc = pd.get_dummies(X_test, columns=cat_feats, drop_first=True)
 X_train_bal_enc, X_test_enc = X_train_bal_enc.align(X_test_enc, join='left', axis=1, fill_value=0)
 
+# Fix column names to remove special characters that XGBoost doesn't allow
+def clean_column_name(col_name):
+    """Clean column names by removing special characters that XGBoost doesn't allow"""
+    return str(col_name).replace('[', '_').replace(']', '_').replace('<', '_lt_').replace('>', '_gt_').replace(',', '_')
+
+X_train_bal_enc.columns = [clean_column_name(col) for col in X_train_bal_enc.columns]
+X_test_enc.columns = [clean_column_name(col) for col in X_test_enc.columns]
+
 # Scale numeric
 num_feats = X_train_bal_enc.select_dtypes(include=['int64','float64']).columns
 scaler = StandardScaler()
