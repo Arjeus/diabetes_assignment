@@ -1,0 +1,35 @@
+[I 2025-06-16 12:00:22,969] Trial 96 finished with value: 0.9211633058834513 and parameters: {'n_estimators': 139, 'max_depth': 15, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'bootstrap': True}. Best is trial 77 with value: 0.9231351421785287.
+
+#f1 is metric
+[I 2025-06-16 12:48:30,904] Trial 36 finished with value: 0.8482237475426458 and parameters: {'n_estimators': 101, 'max_depth': 15, 'min_samples_split': 2, 'min_samples_leaf': 1, 'max_features': None, 'bootstrap': True}. Best is trial 36 with value: 0.8482237475426458.
+
+#f1, cv=5
+[I 2025-06-16 15:41:35,075] Trial 19 finished with value: 0.8490256131899008 and parameters: {'n_estimators': 91, 'max_depth': 15, 'min_samples_split': 5, 'min_samples_leaf': 1, 'max_features': None, 'bootstrap': True}. Best is trial 19 with value: 0.8490256131899008.
+
+#balanced acts
+[I 2025-06-16 23:55:58,869] Trial 75 finished with value: 0.2715417395578016 and parameters: {'n_estimators': 119, 'max_depth': 11, 'min_samples_split': 3, 'min_samples_leaf': 2, 'max_features': None, 'bootstrap': True}. Best is trial 75 with value: 0.2715417395578016.
+
+0. those missing values!
+1. dosage modeling.
+2. disease associations
+3. ensembling.
+
+just pick one, then sorry.
+
+expanded icd-9
+{'n_estimators': 670,
+ 'max_depth': 8,
+ 'learning_rate': 0.012630591763992055,
+ 'subsample': 0.6234652097806468,
+ 'colsample_bytree': 0.9318450049695637,
+ 'reg_alpha': 0.43776530828966426,
+ 'reg_lambda': 0.9205318142049131}
+
+quantified drugs
+{'n_estimators': 716,
+ 'max_depth': 6,
+ 'learning_rate': 0.02046915809446476,
+ 'subsample': 0.6001918007636999,
+ 'colsample_bytree': 0.7235227092342299,
+ 'reg_alpha': 0.826620419969754,
+ 'reg_lambda': 0.9042855119584271}
