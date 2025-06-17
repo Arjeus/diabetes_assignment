@@ -25,7 +25,7 @@ expanded icd-9
  'reg_alpha': 0.43776530828966426,
  'reg_lambda': 0.9205318142049131}
 
-quantified drugs
+quantified drugs, random_state=42
 {'n_estimators': 716,
  'max_depth': 6,
  'learning_rate': 0.02046915809446476,
