@@ -1,23 +1,3 @@
-# %% [markdown]
-#  # Diabetes 30‑Day Readmission Prediction
-# 
-#  This notebook reproduces the end‑to‑end pipeline described in ChatGPT's analysis:
-# 
-#  data cleaning, exploratory analysis, feature engineering, class balancing, model training,
-# 
-#  evaluation, and SHAP interpretation.
-# 
-# 
-# 
-#  **Dataset files expected in the working directory:**
-# 
-#  - `diabetic_data.csv`
-# 
-#  - `IDS_mapping.csv`
-# 
-# 
-# 
-#  Install missing libraries before running (e.g. `xgboost`, `shap`).
 
 # %%
 
@@ -37,7 +17,7 @@ from sklearn.utils import resample
 import shap
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import pdb
 sns.set(style='whitegrid')
 
 
@@ -174,7 +154,7 @@ df.drop(columns=['diag_1','diag_2','diag_3'], inplace=True)
 
 # %%
 
-df.drop(columns=['encounter_id','patient_nbr'], inplace=True, errors='ignore') #??
+df.drop(columns=['encounter_id'], inplace=True, errors='ignore')
 
 # %% [markdown]
 #  ## 3. Train‑test split & preprocessing
@@ -238,7 +218,25 @@ X_train_bal_enc[num_feats] = scaler.fit_transform(X_train_bal_enc[num_feats])
 X_test_enc[num_feats] = scaler.transform(X_test_enc[num_feats])
 
 print("Feature engineering completed. Starting model training...")
+# Dummify categorical variables for X_train and X_test
+print("Creating dummy variables for training and test sets...")
 
+# Get categorical columns
+cat_cols = X_train.select_dtypes(include=['object']).columns
+print(f"Categorical columns to encode: {list(cat_cols)}")
+
+# Dummify X_train and X_test
+X_train = pd.get_dummies(X_train, columns=cat_feats, drop_first=True)
+X_test = pd.get_dummies(X_test, columns=cat_feats, drop_first=True)
+
+scaler = StandardScaler() # normalize!
+X_train[num_feats] = scaler.fit_transform(X_train[num_feats])
+X_test[num_feats] = scaler.transform(X_test[num_feats])
+X_train, X_test = X_train.align(X_test, join='left', axis=1, fill_value=0)
+
+# Clean column names for XGBoost compatibility
+X_train.columns = [clean_column_name(col) for col in X_train.columns]
+X_test.columns = [clean_column_name(col) for col in X_test.columns]
 
 
 # %% [markdown]
@@ -279,46 +277,6 @@ preds['XGBoost'] = eval_model('XGBoost', xgb)
 
 
 # %%
-# Define search space with proper types
-# rf_param_grid = {
-#     'n_estimators': [50, 100, 200],
-#     'max_depth': [5, 10, 15, None],
-#     'min_samples_split': [2, 5, 10],
-#     'min_samples_leaf': [1, 2, 4],
-#     'max_features': ['sqrt', 'log2', None],
-#     'bootstrap': [True, False]
-# }
-
-# Install: pip install optuna
-# import optuna
-# from sklearn.model_selection import cross_val_score
-
-# def objective(trial):
-#     # Define hyperparameters to optimize
-#     params = {
-#         'n_estimators': trial.suggest_int('n_estimators', 50, 200),
-#         'max_depth': trial.suggest_int('max_depth', 3, 15),
-#         'min_samples_split': trial.suggest_int('min_samples_split', 2, 10),
-#         'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 5),
-#         'max_features': trial.suggest_categorical('max_features', ['sqrt', 'log2', None]),
-#         'bootstrap': trial.suggest_categorical('bootstrap', [True, False])
-#     }
-    
-#     model = RandomForestClassifier(**params, random_state=1803)
-#     scores = cross_val_score(model, X_train_bal_enc, y_train_bal, cv=5, scoring='f1')
-#     return scores.mean()
-
-# # Create study and optimize
-# study = optuna.create_study(direction='maximize')
-# study.optimize(objective, n_trials=200, n_jobs=10)
-
-# print(f"Best parameters: {study.best_params}")
-# print(f"Best score: {study.best_value}")
-
-# # Train final model with best parameters
-# best_rf = RandomForestClassifier(**study.best_params, random_state=1803)
-# best_rf.fit(X_train_bal_enc, y_train_bal)
-
 import optuna
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import Pipeline
@@ -327,24 +285,9 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from imblearn.over_sampling import RandomOverSampler
 from imblearn.pipeline import Pipeline as ImbPipeline
 
-# Define preprocessing steps
-def create_preprocessing_pipeline():
-    # Identify categorical and numerical columns
-    categorical_features = X_train.select_dtypes(include='object').columns.tolist()
-    numerical_features = X_train.select_dtypes(include=['int64', 'float64']).columns.tolist()
-    
-    # Create preprocessor
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ('num', StandardScaler(), numerical_features),
-            ('cat', OneHotEncoder(drop='first', handle_unknown='ignore'), categorical_features)
-        ]
-    )
-    return preprocessor, categorical_features, numerical_features
 
 # Create pipeline with proper order: preprocess -> balance -> model (with Optuna parameters)
 def create_model_pipeline(trial=None):
-    preprocessor, _, _ = create_preprocessing_pipeline()
     
     # If trial is provided, optimize hyperparameters
     if trial is not None:
@@ -379,9 +322,7 @@ def create_model_pipeline(trial=None):
             eval_metric='logloss', use_label_encoder=False,
             verbosity=0, random_state=1803
         )
-    
     pipeline = ImbPipeline([
-        ('preprocessor', preprocessor),
         ('balancer', RandomOverSampler(random_state=1803)),
         ('classifier', classifier)
     ])
@@ -393,6 +334,7 @@ def objective(trial):
     pipeline = create_model_pipeline(trial)
     
     # Cross-validation with proper data handling
+
     cv_scores = cross_val_score(
         pipeline, X_train, y_train, 
         cv=4,  # Reduced for faster optimization
@@ -406,7 +348,7 @@ def objective(trial):
 print("Starting Optuna hyperparameter optimization...")
 study = optuna.create_study(
     direction='maximize',
-    sampler=optuna.samplers.TPESampler(seed=42)
+    sampler=optuna.samplers.TPESampler(seed=1803)
 )
 
 # Optimize with progress callback
@@ -416,7 +358,7 @@ study = optuna.create_study(
 
 study.optimize(
     objective, 
-    n_trials=500,
+    n_trials=200,
     # callbacks=[callback],
     show_progress_bar=True,
 )

@@ -33,3 +33,9 @@ quantified drugs, random_state=42
  'colsample_bytree': 0.7235227092342299,
  'reg_alpha': 0.826620419969754,
  'reg_lambda': 0.9042855119584271}
+
+ {'n_estimators': 621, 'max_depth': 8, 'learning_rate': 0.010821094727261244, 'subsample': 0.6086414725467163, 'colsample_bytree': 0.6495626155559242, 'reg_alpha': 0.9739676762474889, 'reg_lambda': 0.5640472319142288}
+
+# for no diag only
+Optimization completed!
+Best parameters: {'n_estimators': 366, 'max_depth': 6, 'learning_rate': 0.04073125372409247, 'subsample': 0.7513214996985449, 'colsample_bytree': 0.6158444732133944, 'reg_alpha': 0.44198799593420307, 'reg_lambda': 0.7474649777575748}
