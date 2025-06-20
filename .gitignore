@@ -4,3 +4,7 @@ diabetes_test.py
 diabetes_readmission_prediction_ensemble.py
 *.pkl
 pkl_bk/*
+lightning_logs/*
+.pt_tmp/*
+best_pytorch_tabular_model/*
+saved_models/*

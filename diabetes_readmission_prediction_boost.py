@@ -19,11 +19,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pdb
 sns.set(style='whitegrid')
-
-
 # %% [markdown]
 #  ## 1. Load raw data
-
 # %%
 
 DATA_DIR = Path('/home/arjay55/code/datasets/diabetes+130-us+hospitals+for+years+1999-2008')  # change if files are elsewhere
@@ -31,8 +28,6 @@ df = pd.read_csv(DATA_DIR / 'diabetic_data.csv')
 ids_map = pd.read_csv(DATA_DIR / 'IDS_mapping.csv')
 print(f'Data shape: {df.shape}')
 df.head()
-
-
 # %%
 def encode_med_change(x):
     """
@@ -54,7 +49,6 @@ def encode_med_change(x):
     }
     # normalize to lower‐case string, then lookup
     return mapping.get(str(x).strip().lower(), np.nan)
-
 # %%
 # Apply medication change encoding to all medication columns
 medication_cols = [
@@ -73,7 +67,6 @@ print(f"Applied medication change encoding to {len(medication_cols)} columns")
 print("Sample encoded values:")
 print(df[medication_cols[:5]].head())
    
-
 # %%
 # Drop weight (97% missing) and impossible genders
 df = df[df['gender'] != 'Unknown/Invalid'].copy()
@@ -87,11 +80,8 @@ df[categorical_cols] = df[categorical_cols].replace('?', 'Unknown')
 hospice_codes = [11, 19, 20, 21]
 df = df[~df['discharge_disposition_id'].isin(hospice_codes)]
 print('After cleaning:', df.shape)
-
-
 # %% [markdown]
 #  ### 2.1 Map admission/disposition/source IDs
-
 # %%
 # Create mapping for admission_type_id only (since that's what we have)
 def build_mapping_from_df(df_map):
@@ -120,10 +110,8 @@ df['admission_type_id'] = df['admission_type_id'].map(admission_type_mapping_fix
 
 print("After applying mapping with converted keys:")
 print(df['admission_type_id'].value_counts())
-
 # %% [markdown]
 #  ### 2.2 Aggregate ICD‑9 diagnosis codes
-
 # %%
 
 def diag_category(icd):
@@ -151,19 +139,15 @@ for col in ['diag_1', 'diag_2', 'diag_3']:
     df[f'{col}_cat'] = df[col].apply(diag_category)
 
 df.drop(columns=['diag_1','diag_2','diag_3'], inplace=True)
-
 # %%
 
 df.drop(columns=['encounter_id'], inplace=True, errors='ignore')
-
 # %% [markdown]
 #  ## 3. Train‑test split & preprocessing
-
 # %%
 def clean_column_name(col_name):
     """Clean column names by removing special characters that XGBoost doesn't allow"""
     return str(col_name).replace('[', '_').replace(']', '_').replace('<', '_lt_').replace('>', '_gt_').replace(',', '_')
-
 # %%
 
 y = (df['readmitted'] == '<30').astype(int)
@@ -178,12 +162,8 @@ print('Test size:', X_test.shape, 'Pos rate:', y_test.mean().round(3))
 # Fix column names to remove special characters that XGBoost doesn't allow
 X_train.columns = [clean_column_name(col) for col in X_train.columns]
 X_test.columns = [clean_column_name(col) for col in X_test.columns]
-
-
-
 # %% [markdown]
 #  ### 3.1 Balance training set by random oversampling
-
 # %%
 
 train = pd.concat([X_train, y_train], axis=1)
@@ -194,12 +174,8 @@ train_bal = pd.concat([maj, minu_upsampled])
 X_train_bal = train_bal.drop(columns=['readmitted'])
 y_train_bal = train_bal['readmitted']
 print('Balanced class counts:', y_train_bal.value_counts())
-
-
-
 # %% [markdown]
 #  ### 3.2 One‑hot encode categorical variables
-
 # %%
 
 cat_feats = X_train_bal.select_dtypes(include='object').columns
@@ -237,11 +213,8 @@ X_train, X_test = X_train.align(X_test, join='left', axis=1, fill_value=0)
 # Clean column names for XGBoost compatibility
 X_train.columns = [clean_column_name(col) for col in X_train.columns]
 X_test.columns = [clean_column_name(col) for col in X_test.columns]
-
-
 # %% [markdown]
 #  ## 4. Model training
-
 # %%
 
 print("Initializing models...")
@@ -256,8 +229,6 @@ print("Training Random Forest...")
 rf.fit(X_train_bal_enc, y_train_bal)
 print("Training XGBoost...")
 xgb.fit(X_train_bal_enc, y_train_bal)
-
-
 # %%
 
 def eval_model(name, model):
@@ -274,8 +245,6 @@ preds = {}
 preds['Logistic'] = eval_model('Logistic Regression', logreg)
 preds['RandomForest'] = eval_model('Random Forest', rf)
 preds['XGBoost'] = eval_model('XGBoost', xgb)
-
-
 # %%
 import optuna
 from sklearn.model_selection import cross_val_score, StratifiedKFold
@@ -378,8 +347,6 @@ best_pipeline.named_steps['classifier'].set_params(**study.best_params)
 # Cross-validation with best parameters
 final_cv_scores = cross_val_score(best_pipeline, X_train, y_train, cv=5, scoring='f1')
 print(f"Final CV F1 score: {final_cv_scores.mean():.3f} ± {final_cv_scores.std():.3f}")
-
-
 # %%
 print("\nTraining final model with best parameters...")
 best_pipeline = create_model_pipeline()
@@ -390,11 +357,9 @@ best_pipeline.named_steps['classifier'].set_params(**study.best_params,random_st
 # Cross-validation with best parameters
 final_cv_scores = cross_val_score(best_pipeline, X_train, y_train, cv=5, scoring='f1')
 print(f"Final CV F1 score: {final_cv_scores.mean():.3f} ± {final_cv_scores.std():.3f}")
-
 # %%
 # Train the final model on all training data
 best_pipeline.fit(X_train, y_train)
-
 # %%
 # Evaluate on test set
 y_pred_test = best_pipeline.predict(X_test)
@@ -413,8 +378,6 @@ print(f"ROC-AUC: {test_auc:.3f}")
 
 # Save the best model for later use
 best_rf_optimized = best_pipeline.named_steps['classifier']
-
-
 # %%
 
 # Create confusion matrix
@@ -431,19 +394,14 @@ plt.title('Confusion Matrix - Optimized Random Forest')
 plt.ylabel('True Label')
 plt.xlabel('Predicted Label')
 plt.show()
-
 # %%
 print(f"\nConfusion Matrix:")
 print(f"True Negatives: {cm[0,0]}")
 print(f"False Positives: {cm[0,1]}")
 print(f"False Negatives: {cm[1,0]}")
 print(f"True Positives: {cm[1,1]}")
-
-
 # %%
 study.best_params
-
-
 # %%
 
 
