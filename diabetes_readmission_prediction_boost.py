@@ -443,53 +443,7 @@ print(f"True Positives: {cm[1,1]}")
 # %%
 study.best_params
 
-# %%
-# SHAP Analysis for the optimized Random Forest
-# We need to extract the classifier from the pipeline and use preprocessed data
-
-# # Get the preprocessed test data by transforming through the pipeline steps
-# X_test_preprocessed = best_pipeline.named_steps['preprocessor'].transform(X_test)
-
-# # Get the trained classifier from the pipeline
-# trained_classifier = best_pipeline.named_steps['classifier']
-
-# # Create SHAP explainer for the Random Forest classifier
-# explainer = shap.TreeExplainer(trained_classifier)
-
-# # Calculate SHAP values using the preprocessed test data
-# # Note: Using a subset for faster computation
-# sample_size = min(1000, len(X_test_preprocessed))
-# X_test_sample = X_test_preprocessed[:sample_size]
-
-# print(f"Computing SHAP values for {sample_size} test samples...")
-# shap_values = explainer.shap_values(X_test_sample, check_additivity=False)
-
-# # If binary classification, take the positive class SHAP values
-# if isinstance(shap_values, list) and len(shap_values) == 2:
-#     shap_values = shap_values[1]  # positive class
-
-# # Get feature names from the preprocessor
-# feature_names = best_pipeline.named_steps['preprocessor'].get_feature_names_out()
-
-# # Create a DataFrame for easier handling
-# X_test_sample_df = pd.DataFrame(X_test_sample, columns=feature_names)
-
-# # Summary plot (bar)
-# shap.summary_plot(shap_values, X_test_sample_df, plot_type='bar', show=False)
-# plt.title('Mean SHAP Feature Importance - Optimized Random Forest')
-# plt.tight_layout()
-# plt.show()
-
-# # Detailed summary plot
-# shap.summary_plot(shap_values, X_test_sample_df, show=False)
-# plt.title('SHAP Summary Plot - Optimized Random Forest')
-# plt.tight_layout()
-# plt.show()
-
-
-
 
 # %%
-
 
 

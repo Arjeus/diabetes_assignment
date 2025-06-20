@@ -39,3 +39,7 @@ quantified drugs, random_state=42
 # for no diag only
 Optimization completed!
 Best parameters: {'n_estimators': 366, 'max_depth': 6, 'learning_rate': 0.04073125372409247, 'subsample': 0.7513214996985449, 'colsample_bytree': 0.6158444732133944, 'reg_alpha': 0.44198799593420307, 'reg_lambda': 0.7474649777575748}
+
+# gboost with patient id
+Best parameters: {'n_estimators': 875, 'max_depth': 6, 'learning_rate': 0.02441573003204636, 'subsample': 0.8348584334899195, 'colsample_bytree': 0.6271835738912712, 'reg_alpha': 0.6567820281472186, 'reg_lambda': 0.6412674433484106}
+Best CV F1 score: 0.2820
