@@ -8,3 +8,4 @@ lightning_logs/*
 .pt_tmp/*
 best_pytorch_tabular_model/*
 saved_models/*
+diabetes_readmission_prediction_boost_discharge_alternative.ipynb
