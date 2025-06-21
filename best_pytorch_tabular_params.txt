@@ -2,12 +2,12 @@ Best PyTorch Tabular Hyperparameters:
 ==================================================
 layers_depth: 2
 layer_size: 256
-dropout: 0.20543906082887847
-learning_rate: 0.007589579618958715
-batch_size: 2048
-activation: ReLU
+dropout: 0.006594375057993401
+learning_rate: 0.00036216112730068074
+batch_size: 512
+activation: LeakyReLU
 
-Best CV Accuracy Score: 0.8225
-Final Test Accuracy Score: 0.8719
-Final Test F1 Score: 0.0963
-Final Test ROC-AUC: 0.6033
+Best CV Accuracy Score: 0.8092
+Final Test Accuracy Score: 0.8026
+Final Test F1 Score: 0.2469
+Final Test ROC-AUC: 0.6553
