@@ -18,10 +18,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pdb
 sns.set(style='whitegrid')
-
 # %% [markdown]
 #   ## 1. Load raw data
-
 # %%
 
 DATA_DIR = Path('/home/arjay55/code/datasets/diabetes+130-us+hospitals+for+years+1999-2008')  # change if files are elsewhere
@@ -29,7 +27,6 @@ df = pd.read_csv(DATA_DIR / 'diabetic_data.csv')
 ids_map = pd.read_csv(DATA_DIR / 'IDS_mapping.csv')
 print(f'Data shape: {df.shape}')
 df.head()
-
 # %%
 # Print columns by data type
 categorical_cols = df.select_dtypes(include=['object', 'category']).columns
@@ -45,7 +42,6 @@ print(integer_cols.tolist())
 
 print(f"\nTotal columns analyzed: {len(categorical_cols) + len(integer_cols)}")
 print(f"DataFrame shape: {df.shape}")
-
 # %%
 # convert ['encounter_id', 'patient_nbr', 'admission_type_id', 'discharge_disposition_id', 'admission_source_id'] to category
 categorical_cols = ['encounter_id', 'patient_nbr', 'admission_type_id', 'discharge_disposition_id', 'admission_source_id']
@@ -54,7 +50,6 @@ df[categorical_cols] = df[categorical_cols].astype('category')
 categorical_cols_rest = df.select_dtypes(include=['object', 'category']).columns
 # convert rest of the categorical columns to category
 df[categorical_cols_rest] = df[categorical_cols_rest].astype('category')
-
 # %%
 def encode_med_change(x):
     """
@@ -78,7 +73,6 @@ def encode_med_change(x):
     }
     # normalize to lower‐case string, then lookup
     return mapping.get(str(x).strip().lower(), np.nan)
-
 # %%
 # Apply medication change encoding to all medication columns
 medication_cols = [
@@ -97,7 +91,6 @@ print(f"Applied medication change encoding to {len(medication_cols)} columns")
 print("Sample encoded values:")
 print(df[medication_cols[:5]].head())
    
-
 # %%
 # Drop weight as 97% have missing weights and drop impossible genders
 df = df[df['gender'] != 'Unknown/Invalid'].copy()
@@ -115,8 +108,6 @@ df[categorical_cols] = df[categorical_cols].replace('?', 'Unknown')
 # Remove encounters with discharge disposition indicating death/hospice
 hospice_codes = [11, 19, 20, 21]
 df = df[~df['discharge_disposition_id'].isin(hospice_codes)]
-
-
 # %%
 # 2. Compute proportions
 freq = df['discharge_disposition_id'].value_counts(normalize=True)
@@ -135,11 +126,9 @@ df['disch_reduced'] = df['discharge_disposition_id'].apply(bucket_disp)
 df.drop(columns=['discharge_disposition_id'], inplace=True)
 # 6. Dummify the reduced column
 df = pd.get_dummies(df, columns=['disch_reduced'], drop_first=True)
-
 # %% [markdown]
 #   ### 2.1 Map admission/disposition/source IDs
 #   * Translates IDs to descriptions for easier analysis
-
 # %%
 # Create mapping for admission_type_id only (since that's what we have)
 def build_mapping_from_df(df_map):
@@ -168,12 +157,10 @@ df['admission_type_id'] = df['admission_type_id'].map(admission_type_mapping_fix
 # df_pt['admission_type_id'] = df_pt['admission_type_id'].map(admission_type_mapping_fixed).fillna('Other')
 print("After applying mapping with converted keys:")
 print(df['admission_type_id'].value_counts())
-
 # %% [markdown]
 #   ### 2.2 Aggregate ICD‑9 diagnosis codes
 # * First if statement are focused on internal, coronary and diabetic diseases, which could have comorbidities with each other, and thus we choose to make this detailed.
 # * Other diseases are grouped, as they can have of less influence.
-
 # %%
 
 def diag_category(icd):
@@ -203,25 +190,19 @@ for col in ['diag_1', 'diag_2', 'diag_3']:
 
 df.drop(columns=['diag_1','diag_2','diag_3'], inplace=True)
 # df_pt.drop(columns=['diag_1','diag_2','diag_3'], inplace=True)
-
 # %% [markdown]
 # encounter_id has no relevance in the study
-
 # %%
 
 df.drop(columns=['encounter_id'], inplace=True, errors='ignore')
-
 # %%
 df_pt = df.copy() # for Pytorch Tabular
-
 # %% [markdown]
 #   ## 3. Train‑test split & preprocessing
-
 # %%
 def clean_column_name(col_name):
     """Clean column names by removing special characters that XGBoost doesn't allow"""
     return str(col_name).replace('[', '_').replace(']', '_').replace('<', '_lt_').replace('>', '_gt_').replace(',', '_')
-
 # %%
 
 y = (df['readmitted'] == '<30').astype(int)
@@ -236,10 +217,8 @@ print('Test size:', X_test.shape, 'Pos rate:', y_test.mean().round(3))
 # Fix column names to remove special characters that XGBoost doesn't allow
 X_train.columns = [clean_column_name(col) for col in X_train.columns]
 X_test.columns = [clean_column_name(col) for col in X_test.columns]
-
 # %% [markdown]
 #   ### 3.1 Balance training set by random oversampling
-
 # %%
 
 train = pd.concat([X_train, y_train], axis=1)
@@ -250,10 +229,8 @@ train_bal = pd.concat([maj, minu_upsampled])
 X_train_bal = train_bal.drop(columns=['readmitted'])
 y_train_bal = train_bal['readmitted']
 print('Balanced class counts:', y_train_bal.value_counts())
-
 # %% [markdown]
 #   ### 3.2 One‑hot encode categorical variables
-
 # %%
 
 # categorical features ("object" dtype) are dummified, meaning they are converted to one-hot encoded columns.
@@ -295,10 +272,8 @@ X_train, X_test = X_train.align(X_test, join='left', axis=1, fill_value=0)
 # Clean column names for XGBoost compatibility
 X_train.columns = [clean_column_name(col) for col in X_train.columns]
 X_test.columns = [clean_column_name(col) for col in X_test.columns]
-
 # %% [markdown]
 #   ## 4. Model training
-
 # %%
 
 print("Initializing models...")
@@ -313,7 +288,6 @@ print("Training Random Forest...")
 rf.fit(X_train_bal_enc, y_train_bal)
 print("Training XGBoost...")
 xgb.fit(X_train_bal_enc, y_train_bal)
-
 # %%
 
 def eval_model(name, model):
@@ -331,12 +305,10 @@ preds = {}
 preds['Logistic'] = eval_model('Logistic Regression', logreg)
 preds['RandomForest'] = eval_model('Random Forest', rf)
 preds['XGBoost'] = eval_model('XGBoost', xgb)
-
 # %% [markdown]
 # * Results show suboptimal performance. The class imbalance is significant, due to small positivity rate of 0.113.
 # * We will proceed with XGBOOST due to its versatility and a go-to algorithm for tabular data.
 # * We will use optuna as a hyperparameter tuning tool, a generic hyperparameter tuning framework.
-
 # %%
 import optuna
 from sklearn.model_selection import cross_val_score, StratifiedKFold
@@ -440,7 +412,6 @@ best_pipeline.named_steps['classifier'].set_params(**study.best_params)
 # Cross-validation with best parameters
 final_cv_scores = cross_val_score(best_pipeline, X_train, y_train, cv=5, scoring='accuracy')
 print(f"Final CV accuracy score: {final_cv_scores.mean():.3f} ± {final_cv_scores.std():.3f}")
-
 # %%
 print("\nTraining final model with best parameters...")
 best_pipeline = create_model_pipeline()
@@ -451,11 +422,9 @@ best_pipeline.named_steps['classifier'].set_params(**study.best_params,random_st
 # Cross-validation with best parameters
 final_cv_scores = cross_val_score(best_pipeline, X_train, y_train, cv=5, scoring='accuracy')
 print(f"Final CV accuracy score: {final_cv_scores.mean():.3f} ± {final_cv_scores.std():.3f}")
-
 # %%
 # Train the final model on all training data
 best_pipeline.fit(X_train, y_train)
-
 # %%
 # Evaluate on test set
 y_pred_test = best_pipeline.predict(X_test)
@@ -476,10 +445,8 @@ print(f"ROC-AUC: {test_auc:.3f}")
 
 # Save the best model for later use
 best_rf_optimized = best_pipeline.named_steps['classifier']
-
 # %% [markdown]
 # * Accuracy was well achieved. However the lack of data for readmissions resulted in highly skewed result plus some other modeling imperfections. The model is not yet safe for deployment. A higher recall is better. Class weighting that biases on readmission rates will be better.
-
 # %%
 
 # Create confusion matrix
@@ -497,22 +464,18 @@ plt.ylabel('True Label')
 plt.xlabel('Predicted Label')
 # save plot
 plt.savefig('confusion_matrix_optimized_rf.png')
-
 # %%
 print(f"\nConfusion Matrix:")
 print(f"True Negatives: {cm[0,0]}")
 print(f"False Positives: {cm[0,1]}")
 print(f"False Negatives: {cm[1,0]}")
 print(f"True Positives: {cm[1,1]}")
-
 # %%
 study.best_params
-
 # %% [markdown]
 # # PyTorch Tabular Implementation
 # 
 # Now we'll implement the same training pipeline using PyTorch Tabular with neural networks instead of XGBoost. Pytorch Tabular aims to implement suitable neural network architectures for tabular data with ease of use in using other popular frameworks, like Pandas.
-
 # %%
 # Import PyTorch Tabular
 import torch
@@ -529,7 +492,6 @@ print(f"PyTorch version: {torch.__version__}")
 print(f"CUDA available: {torch.cuda.is_available()}")
 if torch.cuda.is_available():
     print(f"CUDA device: {torch.cuda.get_device_name(0)}")
-
 # %%
 # Prepare data for PyTorch Tabular
 # We'll use the same train/test split as XGBoost but with different preprocessing
@@ -553,7 +515,6 @@ X_test_pt.columns = [clean_column_name(col) for col in X_test_pt.columns]
 train_df_pt = X_train_pt.copy()
 train_df_pt["target"] = y_train_pt.values
 print("Data prepared for PyTorch Tabular")
-
 # %%
 # Balance training set by random oversampling (same as XGBoost)
 print("Balancing training data...")
@@ -565,7 +526,6 @@ train_bal_df_pt = pd.concat([maj_pt, minu_upsampled_pt])
 
 print('Balanced class counts for PyTorch Tabular:', train_bal_df_pt['target'].value_counts())
 print('Balanced training set shape:', train_bal_df_pt.shape)
-
 # %%
 # Define categorical and numerical columns for PyTorch Tabular
 categorical_cols_pt = [col for col in X_train_pt.columns if X_train_pt[col].dtype == 'object' or X_train_pt[col].dtype.name == 'category']
@@ -610,11 +570,9 @@ data_config = DataConfig(
 )
 
 print("PyTorch Tabular Data Config created successfully")
-
 # %% [markdown]
 # * We will use CategoryEmbeddingModelConfig, where categorical data are transformed into high dimensional embeddings.
 # * We will go through the process of trying the model incrementally prior to proceeding to hyperparameter tuning.
-
 # %%
 # Create baseline PyTorch Tabular model configuration
 model_config = CategoryEmbeddingModelConfig(
@@ -644,7 +602,6 @@ trainer_config = TrainerConfig(
 optimizer_config = OptimizerConfig()
 
 print("PyTorch Tabular configurations created successfully")
-
 # %%
 # Train baseline PyTorch Tabular model
 print("Training baseline PyTorch Tabular model...")
@@ -660,7 +617,6 @@ baseline_model = TabularModel(
 baseline_model.fit(train=train_bal_df_pt, validation=test_df_pt)
 
 print("Baseline PyTorch Tabular model training completed")
-
 # %%
 # Evaluate baseline PyTorch Tabular model
 print("Evaluating baseline PyTorch Tabular model...")
@@ -694,10 +650,8 @@ print(f"Recall: {baseline_rec:.3f}")
 print(f"F1: {baseline_f1:.3f}")
 print(f"ROC-AUC: {baseline_auc:.3f}")
 print (f"Accuracy: {accuracy_score(y_test_pt, baseline_pred):.3f}")
-
 # %% [markdown]
 # * Results are suboptimal, will proceed to k-fold validation
-
 # %%
 # Implement 4-fold cross-validation for PyTorch Tabular
 from sklearn.model_selection import StratifiedKFold
@@ -708,7 +662,6 @@ from imblearn.over_sampling import RandomOverSampler
 from pytorch_tabular.models.category_embedding.category_embedding_model import CategoryEmbeddingModel
 import pytorch_tabular
 import torch.nn as nn
-
 # %%
 
 class WeightedCategoryEmbeddingModel(CategoryEmbeddingModel):
@@ -746,7 +699,6 @@ class WeightedCategoryEmbeddingModel(CategoryEmbeddingModel):
 # Register the model directly in the category_embedding_model module
 import pytorch_tabular.models.category_embedding.category_embedding_model as ce_module
 ce_module.WeightedCategoryEmbeddingModel = WeightedCategoryEmbeddingModel
-
 # %%
 
 # def pytorch_tabular_cv(X_data, y_data, n_folds=4, model_params=None):
@@ -850,11 +802,9 @@ ce_module.WeightedCategoryEmbeddingModel = WeightedCategoryEmbeddingModel
 # print(f"\nPyTorch Tabular CV Results:")
 # print(f"Mean Accuracy: {np.mean(cv_scores_pt):.3f} ± {np.std(cv_scores_pt):.3f}")
 # print(f"Individual fold scores: {[f'{score:.3f}' for score in cv_scores_pt]}")
-
 # %% [markdown]
 # * Accuracies are suboptimal. Hopefully hyperparameter tuning will enhance this.
 # * In this case, layer depths, activation, batch sizes, etc will be modified.
-
 # %%
 # Hyperparameter tuning for PyTorch Tabular using Optuna
 import optuna
@@ -1000,7 +950,6 @@ study_pt.optimize(
 print(f"\nPyTorch Tabular Optimization completed!")
 print(f"Best parameters: {study_pt.best_params}")
 print(f"Best CV accuracy score: {study_pt.best_value:.4f}")
-
 # %%
 # Train final optimized PyTorch Tabular model
 print("Training final optimized PyTorch Tabular model...")
@@ -1067,7 +1016,6 @@ setattr(final_model_config_pt, 'class_weights', class_weights)
 final_model_pt.fit(train=train_df_pt, validation=test_df_pt)
 
 print("Final PyTorch Tabular model training completed")
-
 # %%
 # Final cross-validation with optimized parameters
 # print("Performing final 4-fold cross-validation with optimized parameters...")
@@ -1104,7 +1052,6 @@ print(f"Precision: {final_prec_pt:.3f}")
 print(f"Recall: {final_rec_pt:.3f}")
 print(f"F1: {final_f1_pt:.3f}")
 print(f"ROC-AUC: {final_auc_pt:.3f}")
-
 # %%
 # Save the final PyTorch Tabular model
 print("Saving PyTorch Tabular model...")
@@ -1143,10 +1090,8 @@ print(f"True Negatives: {cm_pt[0,0]}")
 print(f"False Positives: {cm_pt[0,1]}")
 print(f"False Negatives: {cm_pt[1,0]}")
 print(f"True Positives: {cm_pt[1,1]}")
-
 # %% [markdown]
 # * The results have slightly worse accuracy than in XGBOOST method. However, the higher recall makes it relatively safer to implement.
-
 # %%
 # Compare XGBoost and PyTorch Tabular results
 print("="*60)
@@ -1176,14 +1121,11 @@ for key, value in study_pt.best_params.items():
     print(f"  {key}: {value}")
 
 print("\n" + "="*60)
-
 # %% [markdown]
 # * While the accuracy is good, its low recall might make the model unsuitable for deployment yet.
-
 # %% [markdown]
 # ## Model interpretation
 # * We will use SHAP, a model-agnostic technique to analyze feature contributions the the output.
-
 # %%
 # SHAP Analysis for XGBoost Model
 print("Performing SHAP analysis on the optimized XGBoost model...")
@@ -1228,7 +1170,6 @@ importance_df = pd.DataFrame({
 
 print("\nTop 15 Most Important Features (SHAP):")
 print(importance_df.head(15))
-
 # %%
 from sklearn.inspection import permutation_importance
 from sklearn.metrics import log_loss, make_scorer
@@ -1274,7 +1215,6 @@ importance_df = pd.DataFrame({
     'feature': train_df_pt.columns,
     'importance': result.importances_mean
 }).sort_values(by='importance', ascending=False)
-
 # %%
 importance_df.head(15).plot(kind='barh', x='feature', y='importance', figsize=(12, 8), legend=False)
 plt.title('Permutation Feature Importance - PyTorch Tabular Model')
@@ -1285,8 +1225,6 @@ print("\nTop 15 Most Important Features (Permutation Importance - PyTorch Tabula
 print(importance_df.head(15))
 # %%
 result_xgboost = permutation_importance(xgb_model, X_test, y_test, scoring='accuracy', n_repeats=10, random_state=1803)
-
-
 # %%
 importance_df_xgboost = pd.DataFrame({
     'feature': X_train.columns,
@@ -1295,17 +1233,14 @@ importance_df_xgboost = pd.DataFrame({
 
 print("\nTop 15 Most Important Features (Permutation Importance - XGBoost):")
 print(importance_df_xgboost.head(15))
-
 # %%
 importance_df_xgboost.head(15).plot(kind='barh', x='feature', y='importance', figsize=(12, 8), legend=False)
 plt.title('Permutation Feature Importance - XGBoost Model')
 plt.xlabel('Importance')
 plt.ylabel('Feature')
 plt.tight_layout()
-
 # %% [markdown]
 # ### As of now we will not be implementing SHAP on the Pytorch Model as I am encountering compatibility issues between SHAP and Pytorch Tabular model.
-
 # %%
 # Reload the best PyTorch Tabular model
 # print("Reloading the best PyTorch Tabular model...")
@@ -1314,7 +1249,6 @@ plt.tight_layout()
 # final_model_pt = TabularModel.load_model("best_pytorch_tabular_model")
 
 # print("Model reloaded successfully!")
-
 # %%
 # train_df_pt_float = train_df_pt.astype(np.float32)
 # # keep the feature order you trained with
@@ -1337,8 +1271,6 @@ plt.tight_layout()
 
 # dense_bg   = shap.kmeans(train_df_pt_float, k=100)             # DenseData (not callable)
 # masker     = shap.maskers.Independent(dense_bg.data)    # <-- make it callable
-
-
 # %%
 # # ───  B.  Build the explainer  ────────────────────────────────────────────────
 # explainer_pt = shap.Explainer(
@@ -1347,7 +1279,6 @@ plt.tight_layout()
 #     link=shap.links.logit,                   # tell SHAP what the wrapper outputs
 #     algorithm="permutation"         # same default the auto-chooser would pick
 # )
-
 # %%
 # # ───  C.  Explain a subset  ───────────────────────────────────────────────────
 
@@ -1358,11 +1289,9 @@ plt.tight_layout()
 
 # X_sample_pt     = train_df_pt_float.iloc[sample_indices]
 # shap_values_pt = explainer_pt(X_sample_pt, max_evals=1300)
-
 # %%
 # shap.summary_plot(shap_values_pt.values, features=X_sample_pt,
 #                   feature_names=X_sample_pt.columns, show=False)
-
 # %%
 # # Feature importance ranking for PyTorch Tabular
 # feature_importance_pt = np.abs(shap_values_pt).mean(0)
