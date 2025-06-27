@@ -1,14 +1,14 @@
 Best PyTorch Tabular Hyperparameters:
 ==================================================
-layers_depth: 4
-layer_size: 2048
-dropout: 0.0541108572207363
-learning_rate: 0.006988350986798246
-batch_size: 512
-activation: LeakyReLU
+layers_depth: 3
+layer_size: 512
+dropout: 0.19888689412989274
+learning_rate: 0.00016952317534841183
+batch_size: 1024
+activation: ReLU
 balance_strategy: class_weights
 
-Best CV Accuracy Score: 0.8859
-Final Test Accuracy Score: 0.8385
-Final Test F1 Score: 0.2185
-Final Test ROC-AUC: 0.6953
+Best CV Accuracy Score: 0.8865
+Final Test Accuracy Score: 0.8861
+Final Test F1 Score: 0.0361
+Final Test ROC-AUC: 0.7360
